@@ -11,8 +11,11 @@ using UnityEngine;
 public class TestLobby : MonoBehaviour
 {
     private Lobby hostLobby;
+    private Lobby joinedLobby;
     private float heartBeatTimer = 0f;
     private string playerName;
+
+    private float lobbyUpdateTimer;
 
 
     private async void Start()
@@ -53,9 +56,10 @@ public class TestLobby : MonoBehaviour
             Lobby lobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, maxPlayers, createLobbyOptions);
 
             hostLobby = lobby;
+            joinedLobby = hostLobby;
 
             Debug.Log($"Created Lobby {lobbyName} with game mode: {lobby.Data["Game Mode"].Value}. Max players: {maxPlayers}. Available slots left: {hostLobby.AvailableSlots}. Lobby Id is: {lobby.Id}. Lobby Code is: {lobby.LobbyCode}.");
-            PrintPlayers(lobby);
+            PrintPlayers();
         }
         catch (LobbyServiceException e)
         {
@@ -128,10 +132,11 @@ public class TestLobby : MonoBehaviour
                 Player = GetPlayer()
             };
 
-            Lobby joinedLobby = await Lobbies.Instance.JoinLobbyByCodeAsync(lobbyCode, joinLobbyByCodeOptions);
+            Lobby lobby = await Lobbies.Instance.JoinLobbyByCodeAsync(lobbyCode, joinLobbyByCodeOptions);
+            joinedLobby = lobby;
 
             Debug.Log($"Joined Lobby with code {lobbyCode}.");
-            PrintPlayers(joinedLobby);
+            PrintPlayers();
 
         }
         catch (LobbyServiceException e)
@@ -149,11 +154,12 @@ public class TestLobby : MonoBehaviour
                 Player = GetPlayer()
             };
 
-            Lobby joinedLobby = await LobbyService.Instance.QuickJoinLobbyAsync(quickJoinLobbyOptions);
+            Lobby lobby = await LobbyService.Instance.QuickJoinLobbyAsync(quickJoinLobbyOptions);
             // (on peut ajouter à cette fonction des QuickJoinLobbyOptions)
+            joinedLobby = lobby;
 
             Debug.Log("Lobby Quick Joined.");
-            PrintPlayers(joinedLobby);
+            PrintPlayers();
         }
         catch (LobbyServiceException e)
         {
@@ -162,28 +168,52 @@ public class TestLobby : MonoBehaviour
     }
 
 
-    private void PrintPlayers(Lobby lobby)
+    public async Task UpdateLobbyGameMode(string gameMode)
     {
-        Debug.Log($"Players in Lobby {lobby.Name} with game mode: {lobby.Data["Game Mode"].Value}.");
-        foreach (Player player in lobby.Players)
+        try
+        {
+            UpdateLobbyOptions updateLobbyOptions = new UpdateLobbyOptions
+            {
+                Data = new Dictionary<string, DataObject>
+                {
+                    { "Game Mode", new DataObject(DataObject.VisibilityOptions.Public, gameMode)}
+                }
+            };
+
+            // Lobby est une classe, mais elle n'est pas mise à jour automatiquement, il faut donc
+            // mettre à jour notre instance en récupérant le résultat de la fonction d'Update : 
+            hostLobby = await Lobbies.Instance.UpdateLobbyAsync(hostLobby.Id, updateLobbyOptions);
+            joinedLobby = hostLobby;
+
+            PrintPlayers();
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.Log(e);
+        }
+    }
+
+
+    public void PrintPlayers()
+    {
+        if (joinedLobby == null)
+        {
+            Debug.Log("Can't print players, lobby is null!");
+            return;
+        }
+
+        Debug.Log($"Players in Lobby {joinedLobby.Name} with game mode: {joinedLobby.Data["Game Mode"].Value}.");
+        foreach (Player player in joinedLobby.Players)
         {
             Debug.Log(player.Id + " " + player.Data["PlayerName"].Value);
         }
-    }
-    public void PrintPlayers()
-    {
-        if (hostLobby == null)
-        {
-            Debug.Log("Can't print players, hostLobby is null!");
-            return;
-        }
-        PrintPlayers(hostLobby);
     }
 
 
     private void Update()
     {
         HandlerLobbyHeartBeat();
+        HandleLobbyPollForUpdates();
     }
     private async void HandlerLobbyHeartBeat()
     {
@@ -200,6 +230,27 @@ public class TestLobby : MonoBehaviour
             heartBeatTimer = heartBeatTimerMax;
 
             await LobbyService.Instance.SendHeartbeatPingAsync(hostLobby.Id);
+        }
+    }
+
+
+    private async void HandleLobbyPollForUpdates()
+    {
+        if (joinedLobby == null)
+        {
+            return;
+        }
+
+        lobbyUpdateTimer -= Time.deltaTime;
+
+        if (lobbyUpdateTimer < 0f)
+        {
+            // on ne peut pas le faire plus d'une fois par seconde
+            float lobbyUpdateTimerMax = 1.1f;
+            lobbyUpdateTimer = lobbyUpdateTimerMax;
+
+            Lobby lobby = await LobbyService.Instance.GetLobbyAsync(joinedLobby.Id);
+            joinedLobby = lobby;
         }
     }
 }

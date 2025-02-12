@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -10,4 +11,10 @@ public class LobbyButtons : MonoBehaviour
     public void JoinLobbyButton(string lobbyCode) => testLobby.JoinLobbyByCode(lobbyCode);
     public void QuickJoinLobbyButton() => testLobby.QuickJoinLobby();
     public void PrintPlayersButton() => testLobby.PrintPlayers();
+    public void UpdateLobbyGameModeButton() => StartCoroutine(UpdateLobbyGameModeCoroutine());
+
+    private IEnumerator UpdateLobbyGameModeCoroutine()
+    {
+        yield return testLobby.UpdateLobbyGameMode("Death Match");
+    }
 }
