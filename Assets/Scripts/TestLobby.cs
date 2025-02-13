@@ -245,6 +245,7 @@ public class TestLobby : MonoBehaviour
         {
             await LobbyService.Instance.RemovePlayerAsync(joinedLobby.Id, AuthenticationService.Instance.PlayerId);
             hostLobby = null;
+            joinedLobby = null;
             Debug.Log("Lobby leaved by player.");
         }
         catch (LobbyServiceException e)
