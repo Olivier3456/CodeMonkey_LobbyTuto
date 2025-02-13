@@ -1,7 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Unity.Android.Gradle.Manifest;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Lobbies;
