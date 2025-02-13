@@ -168,7 +168,7 @@ public class TestLobby : MonoBehaviour
     }
 
 
-    public async Task UpdateLobbyGameMode(string gameMode)
+    public async void UpdateLobbyGameMode(string gameMode)
     {
         try
         {
@@ -184,6 +184,37 @@ public class TestLobby : MonoBehaviour
             // mettre à jour notre instance en récupérant le résultat de la fonction d'Update : 
             hostLobby = await Lobbies.Instance.UpdateLobbyAsync(hostLobby.Id, updateLobbyOptions);
             joinedLobby = hostLobby;
+
+            PrintPlayers();
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.Log(e);
+        }
+    }
+
+
+    public async void UpdatePlayerName(string newName)
+    {
+        try
+        {
+            playerName = newName;
+            // On n'est plus obligés de mettre à jour notre lobby manuellement,
+            // vu qu'on le fait maintenant toutes les 1.1 secondes. Mais faisons-le
+            // quand même, pour que la mise à jour soit immédiate.
+            joinedLobby = await LobbyService.Instance.UpdatePlayerAsync(
+                joinedLobby.Id,
+                AuthenticationService.Instance.PlayerId,
+                new UpdatePlayerOptions
+                {
+                    Data = new Dictionary<string, PlayerDataObject>
+                    {
+                        {"PlayerName",
+                        new PlayerDataObject(
+                                PlayerDataObject.VisibilityOptions.Public,
+                                playerName)}
+                    }
+                });
 
             PrintPlayers();
         }
