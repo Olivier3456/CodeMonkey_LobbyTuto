@@ -76,7 +76,7 @@ public class TestLobby : MonoBehaviour
                     {
                         // Member = le joueur sera vu par les membres du lobby
                         // playerName est une string qu'on a ajoutée au début de notre classe
-                        {"PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Public, playerName)}
+                        {"PlayerName", new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName)}
                     }
         };
     }
@@ -237,6 +237,70 @@ public class TestLobby : MonoBehaviour
         foreach (Player player in joinedLobby.Players)
         {
             Debug.Log(player.Id + " " + player.Data["PlayerName"].Value);
+        }
+    }
+
+
+    public async void LeaveLobby()
+    {
+        try
+        {
+            await LobbyService.Instance.RemovePlayerAsync(joinedLobby.Id, AuthenticationService.Instance.PlayerId);
+            hostLobby = null;
+            Debug.Log("Lobby leaved by player.");
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.Log(e);
+        }
+    }
+
+
+    public async void KickPlayer()
+    {
+        try
+        {
+            // ici on vire le 2e joueur dans la liste (donc pas le host)
+            await LobbyService.Instance.RemovePlayerAsync(joinedLobby.Id, joinedLobby.Players[1].Id);
+            Debug.Log("Player kicked.");
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.Log(e);
+        }
+    }
+
+
+    public async void MigrateLobbyHost()
+    {
+        try
+        {
+            UpdateLobbyOptions updateLobbyOptions = new UpdateLobbyOptions
+            {
+                // faisons du second joueur le Host
+                HostId = joinedLobby.Players[1].Id
+            };
+            hostLobby = await Lobbies.Instance.UpdateLobbyAsync(hostLobby.Id, updateLobbyOptions);
+            joinedLobby = hostLobby;
+
+            PrintPlayers();
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.Log(e);
+        }
+    }
+
+
+    public async void DeleteLobby()
+    {
+        try
+        {
+            await LobbyService.Instance.DeleteLobbyAsync(joinedLobby.Id);
+        }
+        catch (LobbyServiceException e)
+        {
+            Debug.Log(e);
         }
     }
 
