@@ -209,7 +209,7 @@ public class TestLobby : MonoBehaviour
                     {
                         {"PlayerName",
                         new PlayerDataObject(
-                                PlayerDataObject.VisibilityOptions.Public,
+                                PlayerDataObject.VisibilityOptions.Member,
                                 playerName)}
                     }
                 });
